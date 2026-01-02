@@ -1,6 +1,9 @@
 --TODO: remove move this and use DI
 
+require "constants"
+
 require "util"
+require("sound-util")
 
 function merge(old, new)
 	old = table.deepcopy(old)
@@ -195,6 +198,18 @@ addDerivative("unit-spawner", "biter-spawner",
         percent = 100
       },
       {
+        type = "poison",
+        percent = 100
+      },
+      {
+        type = "acid",
+        percent = 100
+      },
+      {
+        type = "electric",
+        percent = 100
+      },
+      {
         type = "laser",
         percent = 100
       },
@@ -230,8 +245,8 @@ addDerivative("unit-spawner", "biter-spawner",
     {
       {"wyrm-aggressive", {{0.0, 1}, {1.0, 1}}},
     },
-    -- With zero evolution the spawn rate is 15 seconds, with max evolution it is 10 seconds
-    spawning_cooldown = {900, 600},
+    -- With zero evolution the spawn rate is 15 seconds, with max evolution it is 10 seconds, under default settings
+    spawning_cooldown = {900*wyrmRateScalar, 600*wyrmRateScalar},
     spawning_radius = 1,
     spawning_spacing = 0,
 	autoplace = "nil",
@@ -288,6 +303,36 @@ local v = {
     v.layers[3].draw_as_shadow = true
     v.layers[3].shift.x = v.layers[3].shift.x + 3
     v.layers[3].shift.y = v.layers[3].shift.y + 3.5
+	
+	local eggsprite = {
+			  filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm-egg.png",
+			  priority = "high",
+			  width = 143,
+			  height = 120,
+			  apply_projection = false,
+			  run_mode = "forward-then-backward",
+			  frame_count = 5,
+			  line_length = 5,
+			  shift = {0, 0},
+			  scale = 0.5,
+			  animation_speed = 0.1,
+		  }
+	eggsprite = {
+        layers = {
+            eggsprite,
+            table.deepcopy(eggsprite),
+        }
+    }
+    eggsprite.layers[2].filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm-egg-glow.png"
+    eggsprite.layers[2].draw_as_light = true
+	
+local callsound = 
+{
+	type = "sound",
+	name = "wyrm-call",
+	category = "enemy",
+	variations = sound_variations_with_volume_variations("__MaraxisTrenchWyrms__/sound/roar", 8, 0.5, 1)
+}
 
 addDerivative("unit", "maraxsis-tropical-fish-1", 
 {
@@ -297,7 +342,7 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
 	order = "c-w",
 	flags = {"placeable-neutral", "placeable-enemy", "placeable-off-grid", "not-repairable", "breaths-air"},
     subgroup = "enemies",
-	max_health = 1000,
+	max_health = 1200*wyrmRateScalar,
     is_military_target = true,
     resistances =
     {
@@ -312,7 +357,15 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
       },
       {
         type = "laser",
-        percent = 50
+        percent = math.max(20, math.min(80, 50-10*(wyrmRateScalar-1)))
+      },
+      {
+        type = "poison",
+        percent = 100
+      },
+      {
+        type = "acid",
+        percent = 100
       },
       {
         type = "fire",
@@ -332,6 +385,11 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
 	movement_speed = data.raw.unit["behemoth-biter"].movement_speed * 1.5,
 	distance_per_frame = data.raw.unit["behemoth-biter"].distance_per_frame,
 	run_animation = v,
+	working_sound = {
+		sound = callsound,
+		probability = 1 / (0.5 * 60), -- average pause between the sound is 0.5 seconds
+		max_sounds_per_prototype = 2
+	  },
 	attack_parameters = {
 	    type = "projectile",
 	    ammo_category = "melee",
@@ -360,6 +418,21 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
 			}
 	    },
 	    animation = v,
+      sound =    {
+		category = "enemy",
+		variations = sound_variations_with_volume_variations("__MaraxisTrenchWyrms__/sound/bite", 3, 1.0, 1.6),
+		aggregation = { max_count = 1, remove = true, count_already_playing = true },
+	  },
+	},
+	created_effect = {
+		type = "direct",
+		action_delivery = {
+			type = "instant",
+			source_effects = {
+				type = "script",
+				effect_id = "on-spawn-wyrm",
+			},
+		},
 	},
 	dying_trigger_effect = {
 		type = "create-entity",
@@ -370,7 +443,7 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
 		as_enemy = true,
 		ignore_no_enemies_mode = true,
 		find_non_colliding_position = true,
-		non_colliding_search_radius = 12,		
+		non_colliding_search_radius = 25,		
 	},	
 	--attack_parameters = data.raw.unit["big-biter"].attack_parameters,
 	water_reflection = data.raw.fish["fish"].water_reflection,
@@ -435,6 +508,7 @@ data:extend({
     name = "wyrm-cell"
   },
   capsule,
+  callsound,
   {
     type = "simple-entity-with-force",
     name = "wyrm-egg",
@@ -464,6 +538,18 @@ data:extend({
         type = "impact",
         percent = 100
       },
+      {
+        type = "poison",
+        percent = 100
+      },
+      {
+        type = "acid",
+        percent = 100
+      },
+      {
+        type = "electric",
+        percent = 100
+      },
     },
     subgroup="enemies",
 	collision_mask = data.raw.turret["big-worm-turret"].collision_mask,
@@ -474,19 +560,9 @@ data:extend({
 	is_military_target = true,
     corpse = nil,--"resin-egg-corpse",
     --dying_sound = sounds.worm_dying_small(0.65),
-    animations =
+    pictures =
     {
-      filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm-egg.png",
-      priority = "high",
-      width = 143,
-      height = 120,
-      apply_projection = false,
-	  run_mode = "forward-then-backward",
-      frame_count = 5,
-      line_length = 5,
-      shift = {0, 0},
-	  scale = 0.5,
-      animation_speed = 0.1,
+	 sheet = eggsprite,
     },
 	created_effect = {
 		type = "direct",
@@ -518,7 +594,7 @@ data:extend({
 	loot =
 	{
 	  {
-		count_max = 1,
+		count_max = math.ceil(settings.startup["wyrm-drops-multiplier"].value),
 		count_min = 1,
 		item = "maraxsis-wyrm-specimen",
 		probability = 1

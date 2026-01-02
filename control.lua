@@ -7,15 +7,47 @@ script.on_event(defines.events.on_script_trigger_effect, function(event)
 		pos.y = pos.y-50+math.random()*100
 		local command = {type = defines.command.go_to_location, destination = pos, distraction = defines.distraction.none, pathfind_flags = {prefer_straight_paths = true, no_break = true}}
 		event.cause_entity.commandable.set_command(command)
+	elseif effect_id == "on-spawn-wyrm" then
+		local entity = event.source_entity
+		if math.random() < 0.7 then
+			entity.surface.play_sound{path = "wyrm-call", position = entity.position, override_sound_type = "enemy"}
+		end
+		if settings.startup["wyrm-quality"].value then
+			local quality = entity.quality
+			local orig = quality
+			while quality and quality.next and quality.level < 5 and quality.next_probability > 0 do
+				--game.print("Checking quality " .. quality.name .. "->" .. quality.next.name .. " chance: " .. (quality.next_probability*100) .. "%")
+				if math.random() < quality.next_probability*settings.startup["wyrm-quality-multiplier"].value then
+					quality = quality.next
+				else
+					break
+				end
+			end
+			if quality and orig.level < quality.level then
+				--game.print("Upgrading wyrm to quality " .. quality.name)
+				--TODO: make a "respawn with quality" helper function
+				entity.surface.create_entity{name=entity.name, position=entity.position, force=entity.force, quality=quality, direction = entity.direction}
+				entity.destroy()
+			end
+		end
 	elseif effect_id == "on-capture-wyrm" then
 		game.forces.player.script_trigger_research("hydraulic-science-pack")
 	elseif effect_id == "on-place-wyrm-egg" then
+		local quality = event.cause_entity.quality
 		local entity = event.source_entity
-		local found1 = entity.surface.count_entities_filtered{position = entity.position, radius = 20, name = entity.name}
-		local found2 = entity.surface.count_entities_filtered{position = entity.position, radius = 50, name = entity.name}
-		local found3 = entity.surface.count_entities_filtered{position = entity.position, radius = 100, name = entity.name}
-		if found1 > 2 or found2 > 5 or found3 > 10 then
+		--if quality.level > 0 then game.print("Placing an egg for quality " .. quality.name .. " wyrm @ " .. entity.position.x .. "," .. entity.position.y) end
+		if quality.level > entity.quality.level then
+			--game.print("Replacing with quality " .. quality.name)
+			--TODO: make a "respawn with quality" helper function
+			entity.surface.create_entity{name=entity.name, position=entity.position, force=entity.force, quality=quality, direction = entity.direction}
 			entity.destroy()
+		else
+			local found1 = entity.surface.count_entities_filtered{position = entity.position, radius = 20, name = entity.name}
+			local found2 = entity.surface.count_entities_filtered{position = entity.position, radius = 50, name = entity.name}
+			local found3 = entity.surface.count_entities_filtered{position = entity.position, radius = 100, name = entity.name}
+			if found1 > 2 or found2 > 5 or found3 > 10 then
+				entity.destroy()
+			end
 		end
 	end
 end)
@@ -40,7 +72,7 @@ function createSeed(surface, x, y) --Used by Minecraft MapGen
 	return bit32.band(cantorCombine(seed, cantorCombine(x, y)), 2147483647)
 end
 
-local function tryGenerateInChunk(surface, chunk, chance) --chance -> higher is less common, 25 is default, =~1/12
+local function tryGenerateInChunk(surface, chunk, chance) --chance -> higher is less common, 20 is default, =~1/10
 	local rand = game.create_random_generator()
 	local x = (chunk.left_top.x+chunk.right_bottom.x)/2
 	local y = (chunk.left_top.y+chunk.right_bottom.y)/2
@@ -60,9 +92,11 @@ script.on_event(defines.events.on_chunk_generated, function(event)
 	local surface = event.surface
 	if surface.valid and surface.name == "maraxsis-trench" then
 		local chunk = event.area
-		tryGenerateInChunk(surface, chunk, 25)
+		tryGenerateInChunk(surface, chunk, 20)
 	end
 end)
+
+local CHUNK_SIZE = 32
 
 local function regenerateTrenchSpawners(chance)
 	local surface = game.surfaces["maraxsis-trench"]
@@ -99,11 +133,8 @@ local function regenerateTrenchSpawners(chance)
 	game.print("Genned wyrm spawners in " .. n .. "/" .. n2 .. " chunks, after deleting " .. r)
 end
 
---[[
 local ranTick = false
-
-local CHUNK_SIZE = 32
-
+--[[
 script.on_event(defines.events.on_tick, function(event)	
 	if not ranTick then
 		local surface = game.surfaces["maraxsis-trench"]
@@ -141,8 +172,8 @@ script.on_event(defines.events.on_tick, function(event)
 end)--]]
 
 local function addCommands()
-	commands.add_command("regenerate", {"cmd.regenerate-wyrms-help"}, function(event)
-		regenerateTrenchSpawners(event.parameter and 25*tonumber(event.parameter) or 25)
+	commands.add_command("regenerateWyrms", {"cmd.regenerate-wyrms-help"}, function(event)
+		regenerateTrenchSpawners(event.parameter and 20/tonumber(event.parameter) or 20)
 	end)
 end
 

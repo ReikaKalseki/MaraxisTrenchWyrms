@@ -1,0 +1,1 @@
+wyrmRateScalar = 0.4/settings.startup["wyrm-spawn-rate"].value
