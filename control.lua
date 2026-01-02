@@ -1,0 +1,149 @@
+script.on_event(defines.events.on_script_trigger_effect, function(event)
+	local effect_id = event.effect_id
+
+	if effect_id == "on-wyrm-attack" and event.cause_entity and event.cause_entity.valid then
+		local pos = event.cause_entity.position
+		pos.x = pos.x-50+math.random()*100
+		pos.y = pos.y-50+math.random()*100
+		local command = {type = defines.command.go_to_location, destination = pos, distraction = defines.distraction.none, pathfind_flags = {prefer_straight_paths = true, no_break = true}}
+		event.cause_entity.commandable.set_command(command)
+	elseif effect_id == "on-capture-wyrm" then
+		game.forces.player.script_trigger_research("hydraulic-science-pack")
+	elseif effect_id == "on-place-wyrm-egg" then
+		local entity = event.source_entity
+		local found1 = entity.surface.count_entities_filtered{position = entity.position, radius = 20, name = entity.name}
+		local found2 = entity.surface.count_entities_filtered{position = entity.position, radius = 50, name = entity.name}
+		local found3 = entity.surface.count_entities_filtered{position = entity.position, radius = 100, name = entity.name}
+		if found1 > 2 or found2 > 5 or found3 > 10 then
+			entity.destroy()
+		end
+	end
+end)
+
+function cantorCombine(a, b)
+	--a = (a+1024)%16384
+	--b = b%16384
+	local k1 = a*2
+	local k2 = b*2
+	if a < 0 then
+		k1 = a*-2-1
+	end
+	if b < 0 then
+		k2 = b*-2-1
+	end
+	return 0.5*(k1 + k2)*(k1 + k2 + 1) + k2
+end
+
+---@return integer
+function createSeed(surface, x, y) --Used by Minecraft MapGen
+	local seed = surface.map_gen_settings.seed
+	return bit32.band(cantorCombine(seed, cantorCombine(x, y)), 2147483647)
+end
+
+local function tryGenerateInChunk(surface, chunk, chance) --chance -> higher is less common, 25 is default, =~1/12
+	local rand = game.create_random_generator()
+	local x = (chunk.left_top.x+chunk.right_bottom.x)/2
+	local y = (chunk.left_top.y+chunk.right_bottom.y)/2
+	local seed = createSeed(surface, x, y)
+	rand.re_seed(seed)
+	local pos = nil
+	if rand(0, chance/settings.startup["wyrm-spawner-density"].value) < 2 then
+		pos = surface.find_non_colliding_position_in_box("wyrm-spawner", chunk, 0.5, false)
+		if pos then 
+			surface.create_entity{name = "wyrm-spawner", position = pos, force = game.forces.enemy}
+		end
+	end
+	return pos
+end
+
+script.on_event(defines.events.on_chunk_generated, function(event)
+	local surface = event.surface
+	if surface.valid and surface.name == "maraxsis-trench" then
+		local chunk = event.area
+		tryGenerateInChunk(surface, chunk, 25)
+	end
+end)
+
+local function regenerateTrenchSpawners(chance)
+	local surface = game.surfaces["maraxsis-trench"]
+	local r = 0
+	for _,e in pairs(surface.find_entities_filtered{ name = "wyrm-spawner"}) do
+		if e.valid then
+			e.destroy()
+			r = r+1
+		end
+	end
+	
+	local n = 0
+	local n2 = 0
+	for chunk in surface.get_chunks() do
+		local x = chunk.x
+		local y = chunk.y
+		if surface.is_chunk_generated({x, y}) then
+			local area = {
+				left_top = {	
+					x = x*CHUNK_SIZE,
+					y = y*CHUNK_SIZE
+				},
+				right_bottom = {
+					x = (x+1)*CHUNK_SIZE,
+					y = (y+1)*CHUNK_SIZE
+				}
+			}
+			n2 = n2+1
+			if tryGenerateInChunk(surface, area, chance) then
+				n = n+1
+			end
+		end
+	end
+	game.print("Genned wyrm spawners in " .. n .. "/" .. n2 .. " chunks, after deleting " .. r)
+end
+
+--[[
+local ranTick = false
+
+local CHUNK_SIZE = 32
+
+script.on_event(defines.events.on_tick, function(event)	
+	if not ranTick then
+		local surface = game.surfaces["maraxsis-trench"]
+
+			for _,e in pairs(surface.find_entities_filtered{ name = "wyrm-spawner"}) do
+				if e.valid then e.destroy() end
+			end
+		
+		local n = 0
+		local n2 = 0
+		for chunk in surface.get_chunks() do
+			local x = chunk.x
+			local y = chunk.y
+			if surface.is_chunk_generated({x, y}) then
+				local area = {
+					left_top = {	
+						x = x*CHUNK_SIZE,
+						y = y*CHUNK_SIZE
+					},
+					right_bottom = {
+						x = (x+1)*CHUNK_SIZE,
+						y = (y+1)*CHUNK_SIZE
+					}
+				}
+				n2 = n2+1
+				if tryGenerateInChunk(surface, area) then
+					n = n+1
+				end
+			end
+		end
+		game.print("Retrogenned wyrm vents in " .. n .. "/" .. n2 .. " chunks")
+			
+		ranTick = true
+	end
+end)--]]
+
+local function addCommands()
+	commands.add_command("regenerate", {"cmd.regenerate-wyrms-help"}, function(event)
+		regenerateTrenchSpawners(event.parameter and 25*tonumber(event.parameter) or 25)
+	end)
+end
+
+addCommands()

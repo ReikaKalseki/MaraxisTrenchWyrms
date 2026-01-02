@@ -1,0 +1,9 @@
+{
+  "name": "MaraxisTrenchWyrms",
+  "version": "1.0.0",
+  "factorio_version": "2.0",
+  "title": "Maraxsis Trench Wyrms",
+  "author": "Reika",
+  "description": "Changes the way wyrm samples are obtained on Maraxsis, while also adding something to the trench befitting its aesthetic and implication.",
+  "dependencies": ["base", "(?) DragonIndustries", "maraxsis"]
+}
