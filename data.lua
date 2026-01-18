@@ -1,35 +1,9 @@
 --TODO: remove move this and use DI
 
 require "constants"
-
-require "util"
 require("sound-util")
 
-function merge(old, new)
-	old = table.deepcopy(old)
-
-	for k, v in pairs(new) do
-		if v == "nil" then
-			old[k] = nil
-		else
-			old[k] = v
-		end
-	end
-
-	return old
-end
-
-function addDerivativeFull(template, overrides)
-	local merged = merge(template, overrides)
-	data:extend({merged})
-end
-
-function addDerivative(type, name, overrides)
-	if not data.raw[type] then error("No such prototype type '" .. type .. "' to add a derivative of '" .. name .. "'!") end
-	addDerivativeFull(data.raw[type][name], overrides)
-end
-
--------------------------------------------------------------
+require "__DragonIndustries__.registration"
 
 table.insert(data.raw.recipe["maraxsis-wyrm-confinement-cell"].ingredients, {type = "item", name = "maraxsis-fish-food", amount = 1})
 data.raw.recipe["maraxsis-wyrm-specimen"].hidden = true
@@ -37,7 +11,7 @@ data.raw.technology["hydraulic-science-pack"].research_trigger = {
         type = "scripted",
         trigger_description = "scripted-trigger.capture-wyrm-egg"
 }
-	
+
 local function spawnersprite(var)
 local ret = {
   file_count = 1,
@@ -50,7 +24,7 @@ local ret = {
   shift = {x = 0 / 32, y = 0 / 32},
   x = 254*var,
 
-    filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm-spawner.png",
+    filename = "__MaraxsisTrenchWyrms__/graphics/entity/wyrm-spawner.png",
    direction_count = 1,
     frame_count = 1,
     scale = 1,
@@ -64,7 +38,7 @@ local ret = {
             table.deepcopy(ret),
         }
     }
-    ret.layers[2].filename = "__MaraxisTrenchWyrms__/graphics/entity/spawner-glow.png"
+    ret.layers[2].filename = "__MaraxsisTrenchWyrms__/graphics/entity/spawner-glow.png"
     ret.layers[2].draw_as_light = true
 	--]]
 	return ret
@@ -267,7 +241,7 @@ local v = {
   sprite_count = 320,
   width = 32,
 
-    filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm.png",
+    filename = "__MaraxsisTrenchWyrms__/graphics/entity/wyrm.png",
    direction_count = 32,
     frame_count = 10,
     animation_speed = 0.4,
@@ -284,7 +258,7 @@ local v = {
   sprite_count = 32,
   shift = {x = 0 / 32, y = 0 / 32},
 
-    filename = "__MaraxisTrenchWyrms__/graphics/entity/base_strip.png",
+    filename = "__MaraxsisTrenchWyrms__/graphics/entity/base_strip.png",
    direction_count = 32,
     frame_count = 1,
     scale = 1.25*2,
@@ -298,14 +272,14 @@ local v = {
             table.deepcopy(v),
         }
     }
-    v.layers[2].filename = "__MaraxisTrenchWyrms__/graphics/entity/glow_strip.png"
+    v.layers[2].filename = "__MaraxsisTrenchWyrms__/graphics/entity/glow_strip.png"
     v.layers[2].draw_as_light = true
     v.layers[3].draw_as_shadow = true
     v.layers[3].shift.x = v.layers[3].shift.x + 3
     v.layers[3].shift.y = v.layers[3].shift.y + 3.5
 	
 	local eggsprite = {
-			  filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm-egg.png",
+			  filename = "__MaraxsisTrenchWyrms__/graphics/entity/wyrm-egg.png",
 			  priority = "high",
 			  width = 143,
 			  height = 120,
@@ -323,7 +297,7 @@ local v = {
             table.deepcopy(eggsprite),
         }
     }
-    eggsprite.layers[2].filename = "__MaraxisTrenchWyrms__/graphics/entity/wyrm-egg-glow.png"
+    eggsprite.layers[2].filename = "__MaraxsisTrenchWyrms__/graphics/entity/wyrm-egg-glow.png"
     eggsprite.layers[2].draw_as_light = true
 	
 local callsound = 
@@ -331,19 +305,20 @@ local callsound =
 	type = "sound",
 	name = "wyrm-call",
 	category = "enemy",
-	variations = sound_variations_with_volume_variations("__MaraxisTrenchWyrms__/sound/roar", 8, 0.5, 1)
+	variations = sound_variations_with_volume_variations("__MaraxsisTrenchWyrms__/sound/roar", 8, 0.5, 1)
 }
 
 addDerivative("unit", "maraxsis-tropical-fish-1", 
 {
 	name = "wyrm-aggressive",
-	icon = "__MaraxisTrenchWyrms__/graphics/icons/wyrm.png",
+	icon = "__MaraxsisTrenchWyrms__/graphics/icons/wyrm.png",
 	icon_size = 64,
 	order = "c-w",
 	flags = {"placeable-neutral", "placeable-enemy", "placeable-off-grid", "not-repairable", "breaths-air"},
     subgroup = "enemies",
 	max_health = 1200*wyrmRateScalar,
     is_military_target = true,
+	quality_indicator_scale = 0,
     resistances =
     {
       {
@@ -420,7 +395,7 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
 	    animation = v,
       sound =    {
 		category = "enemy",
-		variations = sound_variations_with_volume_variations("__MaraxisTrenchWyrms__/sound/bite", 3, 1.0, 1.6),
+		variations = sound_variations_with_volume_variations("__MaraxsisTrenchWyrms__/sound/bite", 3, 1.0, 1.6),
 		aggregation = { max_count = 1, remove = true, count_already_playing = true },
 	  },
 	},
@@ -436,7 +411,7 @@ addDerivative("unit", "maraxsis-tropical-fish-1",
 	},
 	dying_trigger_effect = {
 		type = "create-entity",
-		damage_type_filters = {whitelist = true, types = { "physical", "explosion" }},
+		damage_type_filters = {whitelist = true, types = { "physical", "explosion", "electric" }},
 		entity_name = "wyrm-egg",
 		trigger_created_entity = true,
 		tile_collision_mask = {layers = {water_tile = true}},
@@ -500,7 +475,7 @@ data:extend({
   {
     type = "ammo-category",
     name = "wyrm",
-	icon = "__MaraxisTrenchWyrms__/graphics/icons/wyrm.png",
+	icon = "__MaraxsisTrenchWyrms__/graphics/icons/wyrm.png",
     subgroup = "ammo-category"
   },
   {
@@ -512,7 +487,7 @@ data:extend({
   {
     type = "simple-entity-with-force",
     name = "wyrm-egg",
-    icon = "__MaraxisTrenchWyrms__/graphics/icons/wyrm-egg.png",
+    icon = "__MaraxsisTrenchWyrms__/graphics/icons/wyrm-egg.png",
 	icon_size = 32,
     flags = {"placeable-enemy", "placeable-off-grid", "not-repairable", "breaths-air"},
     max_health = 100,
@@ -551,6 +526,7 @@ data:extend({
         percent = 100
       },
     },
+	quality_indicator_scale = 0,
     subgroup="enemies",
 	collision_mask = data.raw.turret["big-worm-turret"].collision_mask,
 	order = "z",

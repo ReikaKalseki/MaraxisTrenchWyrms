@@ -1,3 +1,6 @@
+require "__DragonIndustries__.entities"
+require "__DragonIndustries__.registration"
+
 script.on_event(defines.events.on_script_trigger_effect, function(event)
 	local effect_id = event.effect_id
 
@@ -15,7 +18,8 @@ script.on_event(defines.events.on_script_trigger_effect, function(event)
 		if settings.startup["wyrm-quality"].value then
 			local quality = entity.quality
 			local orig = quality
-			while quality and quality.next and quality.level < 5 and quality.next_probability > 0 do
+			local maxq = getHighestQuality().level
+			while quality and quality.next and quality.level < maxq and quality.next_probability > 0 do
 				--game.print("Checking quality " .. quality.name .. "->" .. quality.next.name .. " chance: " .. (quality.next_probability*100) .. "%")
 				if math.random() < quality.next_probability*settings.startup["wyrm-quality-multiplier"].value then
 					quality = quality.next
@@ -25,9 +29,7 @@ script.on_event(defines.events.on_script_trigger_effect, function(event)
 			end
 			if quality and orig.level < quality.level then
 				--game.print("Upgrading wyrm to quality " .. quality.name)
-				--TODO: make a "respawn with quality" helper function
-				entity.surface.create_entity{name=entity.name, position=entity.position, force=entity.force, quality=quality, direction = entity.direction}
-				entity.destroy()
+				respawnWithQuality(entity, quality)
 			end
 		end
 	elseif effect_id == "on-capture-wyrm" then
