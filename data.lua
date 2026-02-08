@@ -570,7 +570,7 @@ data:extend({
 	loot =
 	{
 	  {
-		count_max = math.ceil(settings.startup["wyrm-drops-multiplier"].value),
+		count_max = math.ceil(settings.startup["maraxsis-wyrm-drops-multiplier"].value),
 		count_min = 1,
 		item = "maraxsis-wyrm-specimen",
 		probability = 1

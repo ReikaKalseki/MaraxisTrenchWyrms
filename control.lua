@@ -1,5 +1,7 @@
 require "__DragonIndustries__.entities"
 require "__DragonIndustries__.registration"
+require "__DragonIndustries__.mathhelper"
+require "__DragonIndustries__.world"
 
 script.on_event(defines.events.on_script_trigger_effect, function(event)
 	local effect_id = event.effect_id
@@ -15,13 +17,13 @@ script.on_event(defines.events.on_script_trigger_effect, function(event)
 		if math.random() < 0.7 then
 			entity.surface.play_sound{path = "wyrm-call", position = entity.position, override_sound_type = "enemy"}
 		end
-		if settings.startup["wyrm-quality"].value then
+		if settings.startup["maraxsis-wyrm-quality"].value then
 			local quality = entity.quality
 			local orig = quality
 			local maxq = getHighestQuality().level
 			while quality and quality.next and quality.level < maxq and quality.next_probability > 0 do
 				--game.print("Checking quality " .. quality.name .. "->" .. quality.next.name .. " chance: " .. (quality.next_probability*100) .. "%")
-				if math.random() < quality.next_probability*settings.startup["wyrm-quality-multiplier"].value then
+				if math.random() < quality.next_probability*settings.startup["maraxsis-wyrm-quality-multiplier"].value then
 					quality = quality.next
 				else
 					break
@@ -54,26 +56,6 @@ script.on_event(defines.events.on_script_trigger_effect, function(event)
 	end
 end)
 
-function cantorCombine(a, b)
-	--a = (a+1024)%16384
-	--b = b%16384
-	local k1 = a*2
-	local k2 = b*2
-	if a < 0 then
-		k1 = a*-2-1
-	end
-	if b < 0 then
-		k2 = b*-2-1
-	end
-	return 0.5*(k1 + k2)*(k1 + k2 + 1) + k2
-end
-
----@return integer
-function createSeed(surface, x, y) --Used by Minecraft MapGen
-	local seed = surface.map_gen_settings.seed
-	return bit32.band(cantorCombine(seed, cantorCombine(x, y)), 2147483647)
-end
-
 local function tryGenerateInChunk(surface, chunk, chance) --chance -> higher is less common, 20 is default, =~1/10
 	local rand = game.create_random_generator()
 	local x = (chunk.left_top.x+chunk.right_bottom.x)/2
@@ -81,7 +63,7 @@ local function tryGenerateInChunk(surface, chunk, chance) --chance -> higher is 
 	local seed = createSeed(surface, x, y)
 	rand.re_seed(seed)
 	local pos = nil
-	if rand(0, chance/settings.startup["wyrm-spawner-density"].value) < 2 then
+	if rand(0, chance/settings.startup["maraxsis-wyrm-spawner-density"].value) < 2 then
 		pos = surface.find_non_colliding_position_in_box("wyrm-spawner", chunk, 0.5, false)
 		if pos then 
 			surface.create_entity{name = "wyrm-spawner", position = pos, force = game.forces.enemy}

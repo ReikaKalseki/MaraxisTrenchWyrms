@@ -1,1 +1,1 @@
-wyrmRateScalar = 0.4/settings.startup["wyrm-spawn-rate"].value
+wyrmRateScalar = 0.4/settings.startup["maraxsis-wyrm-spawn-rate"].value

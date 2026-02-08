@@ -1,13 +1,13 @@
 data:extend{
     {
-        name = 'wyrm-quality',
+        name = 'maraxsis-wyrm-quality',
         setting_type = 'startup',
         type = 'bool-setting',
         order = 'a',
         default_value = true,
     },
     {
-        name = 'wyrm-quality-multiplier',
+        name = 'maraxsis-wyrm-quality-multiplier',
         setting_type = 'startup',
         type = 'double-setting',
         order = 'a',
@@ -16,7 +16,7 @@ data:extend{
         default_value = 1.0,
     },
     {
-        name = 'wyrm-spawner-density',
+        name = 'maraxsis-wyrm-spawner-density',
         setting_type = 'startup',
         type = 'double-setting',
         order = 'a',
@@ -25,7 +25,7 @@ data:extend{
         default_value = 1.0,
     },
     {
-        name = 'wyrm-spawn-rate',
+        name = 'maraxsis-wyrm-spawn-rate',
         setting_type = 'startup',
         type = 'double-setting',
         order = 'a',
@@ -34,7 +34,7 @@ data:extend{
         default_value = 1.0,
     },
     {
-        name = 'wyrm-drops-multiplier',
+        name = 'maraxsis-wyrm-drops-multiplier',
         setting_type = 'startup',
         type = 'double-setting',
         order = 'a',
